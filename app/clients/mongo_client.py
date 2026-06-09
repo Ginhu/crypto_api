@@ -1,0 +1,27 @@
+from motor.motor_asyncio import AsyncIOMotorClient
+
+DB_NAME = "crypto_api"
+COLLECTION_NAME = "market_data"
+
+_client: AsyncIOMotorClient | None = None
+
+
+async def init_db(uri: str) -> None:
+    global _client
+    _client = AsyncIOMotorClient(uri)
+    await get_collection().create_index(
+        [("symbol", 1), ("interval", 1)], unique=True
+    )
+
+
+def get_collection():
+    return _client[DB_NAME][COLLECTION_NAME]
+
+
+async def replace_dataset(document: dict) -> None:
+    collection = get_collection()
+    await collection.replace_one(
+        {"symbol": document["symbol"], "interval": document["interval"]},
+        document,
+        upsert=True,
+    )
