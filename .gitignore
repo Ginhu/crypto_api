@@ -26,6 +26,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Claude Code
+CLAUDE.md
+
 # Pytest
 .pytest_cache/
 htmlcov/
