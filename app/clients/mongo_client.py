@@ -9,9 +9,12 @@ _client: AsyncIOMotorClient | None = None
 async def init_db(uri: str) -> None:
     global _client
     _client = AsyncIOMotorClient(uri)
-    await get_collection().create_index(
-        [("symbol", 1), ("interval", 1)], unique=True
-    )
+    try:
+        await get_collection().create_index(
+            [("symbol", 1), ("interval", 1)], unique=True
+        )
+    except Exception as e:
+        print(f"Warning: could not create MongoDB index at startup: {e}")
 
 
 def get_collection():
