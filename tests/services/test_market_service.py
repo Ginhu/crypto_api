@@ -31,3 +31,28 @@ def test_valid_intervals_contains_expected():
     assert "1d" in VALID_INTERVALS
     assert "1h" in VALID_INTERVALS
     assert "99x" not in VALID_INTERVALS
+
+
+import pytest
+from unittest.mock import AsyncMock, patch
+from app.services.market_service import save_dataset
+
+
+@pytest.mark.asyncio
+async def test_save_dataset_builds_document_and_calls_replace():
+    candles = [{"open_time": "2026-05-10T00:00:00Z", "open": "67000.00",
+                "high": "67450.00", "low": "66800.00", "close": "67200.00",
+                "volume": "123.45"}]
+    with patch(
+        "app.services.market_service.mongo_client.replace_dataset",
+        new_callable=AsyncMock,
+    ) as mock_replace:
+        await save_dataset("BTCUSDT", "5m", "2026-05-10", "2026-06-09", candles)
+    mock_replace.assert_called_once()
+    doc = mock_replace.call_args[0][0]
+    assert doc["symbol"] == "BTCUSDT"
+    assert doc["interval"] == "5m"
+    assert doc["start"] == "2026-05-10"
+    assert doc["end"] == "2026-06-09"
+    assert doc["candles"] == candles
+    assert "fetched_at" in doc

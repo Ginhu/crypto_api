@@ -80,3 +80,54 @@ def test_get_klines_binance_unreachable_returns_502():
     ):
         response = client.get("/api/v1/market/BTCUSDT/klines")
     assert response.status_code == 502
+
+
+def test_post_klines_returns_candles_saved_count():
+    with patch(
+        "app.api.v1.routes.market.fetch_klines",
+        new_callable=AsyncMock,
+        return_value=FAKE_RAW_CANDLES,
+    ), patch(
+        "app.api.v1.routes.market.save_dataset",
+        new_callable=AsyncMock,
+    ):
+        response = client.post("/api/v1/market/BTCUSDT/klines")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["symbol"] == "BTCUSDT"
+    assert body["interval"] == "5m"
+    assert body["candles_saved"] == 1
+
+
+def test_post_klines_auto_uppercases_symbol():
+    with patch(
+        "app.api.v1.routes.market.fetch_klines",
+        new_callable=AsyncMock,
+        return_value=FAKE_RAW_CANDLES,
+    ), patch(
+        "app.api.v1.routes.market.save_dataset",
+        new_callable=AsyncMock,
+    ):
+        response = client.post("/api/v1/market/btcusdt/klines")
+    assert response.status_code == 200
+    assert response.json()["symbol"] == "BTCUSDT"
+
+
+def test_post_klines_invalid_interval_returns_400():
+    response = client.post("/api/v1/market/BTCUSDT/klines?interval=99x")
+    assert response.status_code == 400
+
+
+def test_post_klines_mongo_error_returns_503():
+    with patch(
+        "app.api.v1.routes.market.fetch_klines",
+        new_callable=AsyncMock,
+        return_value=FAKE_RAW_CANDLES,
+    ), patch(
+        "app.api.v1.routes.market.save_dataset",
+        new_callable=AsyncMock,
+        side_effect=Exception("db down"),
+    ):
+        response = client.post("/api/v1/market/BTCUSDT/klines")
+    assert response.status_code == 503
+    assert "Database unavailable" in response.json()["detail"]
