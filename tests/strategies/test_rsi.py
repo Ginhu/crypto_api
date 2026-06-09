@@ -38,3 +38,11 @@ def test_rsi_oversold_open_trade_not_included():
     prices = [200.0 - i * 8 for i in range(25)]
     for t in rsi_oversold(_make_candles(prices)):
         assert t.exit_time != ""
+
+
+def test_registry_contains_both_strategies():
+    from app.strategies import REGISTRY
+    assert "rsi_oversold" in REGISTRY
+    assert "ma_crossover_20_50" in REGISTRY
+    assert callable(REGISTRY["rsi_oversold"])
+    assert callable(REGISTRY["ma_crossover_20_50"])
